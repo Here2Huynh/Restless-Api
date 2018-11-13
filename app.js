@@ -1,10 +1,39 @@
 
+const config = require('config')
+const morgan = require('morgan')
+const helmet = require('helmet')
 const Joi = require('joi')
+const logger = require('./logger')
+const authenicater = require('./authenticator')
+
 const express = require('express')
 const app = express()
 
+// configuration
+console.log('Application Name: ' + config.get('name'))
+console.log('Mail Server: ' + config.get('mail.host'))
+console.log('Mail Password: ' + config.get('mail.password'))
+
+// console.log(`NODE_ENV: ${process.env.NODE_ENV}`) //return environment of the app, if not set it will be undefined
+
+// console.log(`app: ${app.get('env')}`) // returns development by default
+
+if ( app.get('env') === 'development' ) {
+    app.use(morgan('tiny'))
+    console.log('Morgan enabled...')
+}
+
+
 // adding middleware to process the req body
-app.use(express.json())
+app.use(express.json()) // parses req.body
+app.use(express.urlencoded({ extended: true })) // key=value&key=value
+app.use(express.static('public'))
+app.use(helmet())
+
+
+app.use(logger)
+
+app.use(authenicater)
 
 const courses = [
     { id: 1, name: 'course1'},
