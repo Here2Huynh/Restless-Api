@@ -7,11 +7,29 @@ mongoose.connect('mongodb://localhost/playground')
 
 // schema is specific to mongoose
 const courseSchema = new mongoose.Schema({
-    name: String,
+    name: { 
+        type: String, 
+        required: true,
+        minlength: 5,
+        maxlength: 255,
+        // match: /pattern/
+
+    },
+    category: {
+        type: String,
+        require: true,
+        enum: [ 'web', 'mobile', 'network' ] // valid strings in the given list 
+    },
     author: String,
     tags: [ String ],
     date: { type: Date, default: Date.now },
-    isPublished: Boolean
+    isPublished: Boolean,
+    price: { 
+        type: Number, 
+        required: function() { return this.isPublished },
+        min: 10,
+        max: 200 
+    }
 })
 
 // objs are an instance of the class, class is a blueprint for the obj 
@@ -22,15 +40,27 @@ const Course = mongoose.model('Course', courseSchema) // class
 async function createCourse() {
     const course = new Course({
         name: 'React.js Course',
+        category: '-', 
         author: 'Mosh',
         tags: [ 'react', 'frontend' ],
-        isPublished: true
+        isPublished: true,
+        price: 15
     }) // obj
     
-    
-    const result = await course.save() // async op, because it accessing the fs and db 
-    console.log(result)
+    try {
+        // await course.validate()  // manually validate the promise 
+        // NOTE: mongodb does not care for missing props, so we need to be cautious of validation
+        // use Joi + mongoose validation to ensure validatity 
+        const result = await course.save() // async op, because it accessing the fs and db 
+        console.log(result)
+    }
+    catch (ex) {
+        console.log(ex.message)
+    }
+
 }
+createCourse()
+
 
 // querying documents 
 async function getCourses() {
@@ -127,5 +157,5 @@ async function removeCourse(id) {
     const course = Course.findByIdAndRemove(id)
     console.log(course)
 }
-removeCourse('5befbeef4bbe070d76c63bbb')
+// removeCourse('5befbeef4bbe070d76c63bbb')
 
