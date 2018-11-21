@@ -18,17 +18,36 @@ const courseSchema = new mongoose.Schema({
     category: {
         type: String,
         require: true,
-        enum: [ 'web', 'mobile', 'network' ] // valid strings in the given list 
+        enum: [ 'web', 'mobile', 'network' ],  // valid strings in the given list 
+        lowercase: true
+        // uppercase: true
+        // trim: true   //remove padding around string
     },
     author: String,
-    tags: [ String ],
+    tags: {
+        type: Array,
+        validate: {
+            isAsync: true,
+            validator: function(v, callback) {  // custom validator
+                setTimeout(() => {
+                    const result = v && v.length > 0
+                    callback(result)
+                }, 4000) // async validator 
+                // do some async op
+                // return v && v.length > 0
+            },
+            message: 'A course should have at least one tag.'
+        }
+    },
     date: { type: Date, default: Date.now },
     isPublished: Boolean,
     price: { 
         type: Number, 
         required: function() { return this.isPublished },
         min: 10,
-        max: 200 
+        max: 200,
+        get: v => Math.round(v),
+        set: v => Math.round(v) 
     }
 })
 
@@ -40,11 +59,11 @@ const Course = mongoose.model('Course', courseSchema) // class
 async function createCourse() {
     const course = new Course({
         name: 'React.js Course',
-        category: '-', 
+        category: 'Web', 
         author: 'Mosh',
-        tags: [ 'react', 'frontend' ],
+        tags: [ 'frontend' ],
         isPublished: true,
-        price: 15
+        price: 15.8
     }) // obj
     
     try {
@@ -55,11 +74,15 @@ async function createCourse() {
         console.log(result)
     }
     catch (ex) {
-        console.log(ex.message)
+        // ex.errors.category
+        for (field in ex.errors) {
+            console.log(ex.errors[field].message)
+        }
+        // console.log(ex.message)
     }
 
 }
-createCourse()
+// createCourse()
 
 
 // querying documents 
@@ -103,15 +126,16 @@ async function getCourses() {
         // .skip((pageNumber - 1 ) * pageSize) //pagination 
         // .limit(pageSize)
 
-        .find({ author: 'Mosh', isPublished: true })  // filtering 
+        // .find({ author: 'Mosh', isPublished: true })  // filtering 
+        .find({ _id: '5bf4b4bbfa52274bf71193fb' })
         .limit(10)
-        .sort({ name: 1 })  // 1 is ascending, -1 is descending 
+        .sort({ name: 1, price: 1 })  // 1 is ascending, -1 is descending 
         // .select({ name: 1, tags: 1 })  // select props to be returned 
-        .count() 
-    console.log(courses)
+        // .count() 
+    console.log(courses[0].price)
 }
 
-// getCourses()
+getCourses()
 
 async function updateCourse(id) {
     // approach: query first
